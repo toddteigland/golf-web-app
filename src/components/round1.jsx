@@ -9,6 +9,7 @@ export default function Round1() {
     return localStorage.getItem('selectedTee') || '';
   });
   const { scores, handleScoreChange, fetchScores } = useScores();
+  const [localScores, setLocalScores] = useState({});
 
   const fetchCourse = async() => {
     const courseId = 1;
@@ -30,7 +31,22 @@ export default function Round1() {
 
   useEffect(() => {
     fetchScores();
-  }, [ localStorage.getItem('scores') ]);
+    // calculateNetHoleScore();
+  }, []);
+  
+  //This transforms the scores array of objects, into an object with hole_id as key, and strokes as values
+  useEffect(() => {
+    if (Array.isArray(scores)) {
+      const transformedScores = scores.reduce((acc, scoreEntry) => {
+        acc[scoreEntry.hole_id] = scoreEntry.strokes;
+        return acc;
+      }, {});
+      setLocalScores(transformedScores);
+    } else {
+      console.error('Scores is not an array: ', scores)
+    }
+  }, [scores]);
+
   
   const handleTabClick = (color) => {
     setSelectedTee(color);
@@ -45,11 +61,23 @@ export default function Round1() {
     const user_Id = user.user_id;// User's ID
     const round_Id = 1;// Current round's ID
     const hole_id = holeId;
-    const strokes = value; // Score input by the user
+    const strokes = parseInt(value, 10) || 0;
     handleScoreChange(round_Id, user_Id, hole_id, strokes);
+    setLocalScores(prevLocalScores => ({
+      ...prevLocalScores,
+      [hole_id]: strokes
+    }));
   };
   
-
+  const calculateNetHoleScore = (holeScore, handicap, holeHandicap) => {
+    if (handicap >= holeHandicap) {
+      // Subtract one stroke if the hole is within the range of the handicap
+      return Math.max(0, holeScore - 1);
+    }
+    return holeScore;
+  };
+  
+  
     // Function to render the table based on active tee color
     const renderTeeTable = (color) => {
       // console.log('scores state in RenderTeeTable:: ', scores);
@@ -58,20 +86,36 @@ export default function Round1() {
       }
       let totalScore = 0;
       let totalPar = 0;
+      let totalNetScore = 0;
+      const sortedHoles = courseData
+        .filter(hole => hole.tee_name.toLowerCase() === color)
+        .sort((a, b) => a.handicap - b.handicap); // Sort by difficulty rank
+
       // Filter the courseData based on tee color and generate the table
       const filteredData = courseData.filter(item => item.tee_name.toLowerCase() === color);
       return (
         <table className='table table-striped table-hover'>
-          {/* Table headers */}
+          <thead>
+            <tr>
+              <th>Hole</th>
+              <th>Yards</th>
+              <th>Par</th>
+              <th>Score</th>
+              <th>Cap</th>
+              <th>Net</th>
+              <th>+/-</th>
+            </tr>
+
+          </thead>
           <tbody>
             {filteredData.map((hole, index) => {
-              const score = scores[hole.hole_id] || 0;
-              const overUnderPar = score - hole.par;
-              totalScore += score;
+              const holeScore = localScores[hole.hole_id] || 0; // Access the score directly using hole_id
+              const netHoleScore = calculateNetHoleScore(holeScore, user.handicap, hole.handicap); // index + 1 because difficulty_rank starts at 1
+              const overUnderPar = netHoleScore - hole.par;
+              totalScore += holeScore;
               totalPar += hole.par;
-              // Log the hole object here
-              // console.log('Hole object in map:', hole, 'Hole ID:', hole.hole_id);
-    
+              totalNetScore += netHoleScore;
+              // console.log('localscores ::: ', localScores);
               return (
                 <tr key={index}>
                   <td>{hole.hole_number}</td>
@@ -79,23 +123,27 @@ export default function Round1() {
                   <td>{hole.par}</td>
                   <td>
                     <input
-                      className='rounded w-25' 
+                      className='rounded w-100' 
                       type='number'
-                      value={scores[hole.hole_id] || ''}
+                      value={localScores[hole.hole_id]}
                       onChange={(e) => handleScoreInput(hole.hole_id, e.target.value)}
                     />
                   </td>
-                  <td>{score !== 0 ? `(${overUnderPar > 0 ? '+' : ''}${overUnderPar})` : ''}</td>
+                  <td>{hole.handicap}</td>
+                  <td>{netHoleScore}</td>
+                  <td>{holeScore ? `(${overUnderPar > 0 ? '+' : ''}${overUnderPar})` : ''}</td>
                 </tr>
               );
             })}
-                    <tr>
-          <td colSpan="3">Total</td>
-          <td>{`${totalScore} (${totalScore - totalPar > 0 ? '+' : ''}${totalScore - totalPar})`}</td>
-        </tr>
+            <tr>
+              <td colSpan="3">Total</td>
+              <td>{`${totalScore} (${totalScore - totalPar > 0 ? '+' : ''}${totalScore - totalPar})`}</td>
+              <td>Net Total:{totalNetScore} </td>
+            </tr>
           </tbody>
         </table>
       );
+
     };
 
   return(

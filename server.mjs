@@ -149,7 +149,7 @@ app.get("/getCourseInfo", async (req, res) => {
 
   try {
     const courseQuery = `
-      SELECT c.course_name, c.address, t.tee_name, t.color, t.tee_id, h.hole_number, h.yardage, h.par, h.hole_id
+      SELECT c.course_name, c.address, t.tee_name, t.color, t.tee_id, h.hole_number, h.yardage, h.par, h.hole_id, h.handicap
       FROM courses c
       JOIN tees t ON c.course_id = t.course_id
       JOIN holes h ON t.tee_id = h.tee_id
@@ -164,7 +164,7 @@ app.get("/getCourseInfo", async (req, res) => {
   }
 });
 
-// SCORES LOOKUP  -------------------------------------------------------------------------------------------------------------
+// INDIVIDUAL SCORES LOOKUP  -------------------------------------------------------------------------------------------------------------
 app.get("/getScores", async (req, res) => {
   const course_id = req.query.courseId;
   const user_id = req.query.userId
@@ -176,10 +176,29 @@ app.get("/getScores", async (req, res) => {
     ;`
     const scoresResult = await pool.query(scoresQuery, [course_id, user_id]);
     res.status(200).json(scoresResult.rows);
-    console.log('SCORES LOOKUP RESULT: ', scoresResult);
+    // console.log('SCORES LOOKUP RESULT: ', scoresResult);
   } catch (error) {
     console.error("Error fetching scores Data: ", error);
     res.status(500).json({ error: "Error fetching scores data" });
+  }
+
+})
+
+// ALL SCORES LOOKUP  -------------------------------------------------------------------------------------------------------------
+app.get("/getAllScores", async (req, res) => {
+  const course_id = req.query.courseId;
+
+  try {
+    const scoresQuery = `
+    SELECT * FROM scores 
+    WHERE round_id = $1;
+    ;`
+    const scoresResult = await pool.query(scoresQuery, [course_id]);
+    res.status(200).json(scoresResult.rows);
+    console.log('all SCORES LOOKUP RESULT: ', scoresResult.rows);
+  } catch (error) {
+    console.error("Error fetching ALL scores Data: ", error);
+    res.status(500).json({ error: "Error fetching ALL scores data" });
   }
 
 })
@@ -210,3 +229,24 @@ app.post("/enterScores", async (req, res) => {
     res.status(500).json({ error: "Error in score entry" });
   }
 });
+
+// EDIT PROFILE  -------------------------------------------------------------------------------------------------------------
+app.post("/editProfile", async (req,res) => {
+  const { handicap, user_id } = req.body;
+  console.log('Incoming handicap change! NEW CAP = ', handicap, 'for USER = ', user_id);
+
+  try {
+    const handicapChange = `
+    UPDATE users
+    SET handicap = $1
+    WHERE user_id = $2;
+    `;
+    const values = [handicap, user_id];
+    const result = await pool.query(handicapChange, values);
+
+    res.status(200).json({ message: "Handicap updated successfully" });
+  } catch (error) {
+    console.error("Error in handicap change:", error);
+    res.status(500).json({ error: "Error in changing of handicap" });
+  }
+})

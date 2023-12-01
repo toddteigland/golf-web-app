@@ -20,8 +20,12 @@ export const AuthProvider = ({ children }) => {
     setIsLoggedIn(false);
   };
 
+  const updateUser = (updatedUserData) => {
+    setUser(updatedUserData);
+  }
+
   return (
-    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, user, setUser, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, updateUser, user, setUser, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

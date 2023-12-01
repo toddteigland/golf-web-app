@@ -37,7 +37,7 @@ export default function Header() {
               />
             </svg>
           </button>
-          <h2>Sandbagger 2024</h2>
+          <h2 className="text-white">Sandbagger 2024</h2>
           <div>
             <Link to="/dashboardTournament" className="btn btn-md btn-primary" >
               <svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" fill="currentColor" className="bi bi-house" viewBox="0 0 16 16">

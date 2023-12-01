@@ -6,14 +6,14 @@ DROP TABLE IF EXISTS courses CASCADE;
 -- DROP TABLE IF EXISTS users CASCADE;
 
 
-CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    hashed_password TEXT NOT NULL,
-    handicap INTEGER
-);
+-- CREATE TABLE users (
+--     user_id SERIAL PRIMARY KEY,
+--     first_name VARCHAR(255) NOT NULL,
+--     last_name VARCHAR(255) NOT NULL,
+--     email VARCHAR(255) UNIQUE NOT NULL,
+--     hashed_password TEXT NOT NULL,
+--     handicap INTEGER
+-- );
 
 CREATE TABLE courses (
     course_id SERIAL PRIMARY KEY,
@@ -33,7 +33,8 @@ CREATE TABLE holes (
     tee_id INTEGER REFERENCES Tees(tee_id),
     hole_number INTEGER NOT NULL,
     yardage INTEGER,
-    par INTEGER
+    par INTEGER,
+    handicap INTEGER
 );
 
 CREATE TABLE rounds (

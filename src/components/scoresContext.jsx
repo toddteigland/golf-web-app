@@ -7,29 +7,18 @@ const ScoresContext = createContext();
 // Provider component
 export const ScoresProvider = ({ children }) => {
   
-  const [scores, setScores] = useState(() => {
-    const savedScores = localStorage.getItem('scores');
-    return savedScores ? JSON.parse(savedScores) : {};
-  });
-    
+  const [scores, setScores] = useState([]);
   const { user, isLoggedIn } = useAuth();
 
 
   const fetchScores = async() => {
     const courseId = 1;
     const userId = user.user_id;
-
     try{
       const response = await fetch (`http://localhost:3000/getScores?courseId=${courseId}&userId=${userId}`);
       const data = await response.json();
-  
       // console.log('ALL SCORES results : ', data);
-      const scoresByHole = {};
-      data.forEach(scoreEntry => {
-        scoresByHole[scoreEntry.hole_id] = scoreEntry.strokes;
-      });
-      // console.log('scoresbyhole in fetchScores function::: ', scoresByHole);
-      setScores(scoresByHole)
+      setScores(data)
     } catch (error) {
       console.error('There was an error fetching Scores: ', error)
     }
@@ -48,10 +37,18 @@ export const ScoresProvider = ({ children }) => {
         body: JSON.stringify(score),
       });
       setScores(prevScores => {
-        const updatedScores = { ...prevScores, [hole_Id]: strokes };
-        localStorage.setItem('scores', JSON.stringify(updatedScores));
-        return updatedScores;
+        const existingScoreIndex = prevScores.findIndex(s => s.hole_id === hole_Id && s.user_id === user_Id && s.round_id === round_Id);
+        if (existingScoreIndex >= 0) {
+          // Update existing score
+          const updatedScores = [...prevScores];
+          updatedScores[existingScoreIndex] = score;
+          return updatedScores;
+        } else {
+          // Add new score
+          return [...prevScores, score];
+        }
       });
+      await fetchScores();
 
       if (!response.ok) {
         throw new Error('Network response was not ok');
