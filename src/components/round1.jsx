@@ -24,14 +24,10 @@ export default function Round1() {
       console.error('There was an error fetching course data!', error)
     }
   };
-  
+   
   useEffect(() => {
     fetchCourse();
-  }, []);
-
-  useEffect(() => {
     fetchScores();
-    // calculateNetHoleScore();
   }, []);
   
   //This transforms the scores array of objects, into an object with hole_id as key, and strokes as values
@@ -78,7 +74,7 @@ export default function Round1() {
   };
   
   
-    // Function to render the table based on active tee color
+    //-------- Function to render the table based on active tee color-------------------------------------------------------
     const renderTeeTable = (color) => {
       // console.log('scores state in RenderTeeTable:: ', scores);
       if (!Array.isArray(courseData)) {
@@ -143,9 +139,10 @@ export default function Round1() {
           </tbody>
         </table>
       );
-
     };
+    // End of Table Content ---------------------------------------------------------------------------------------------
 
+    // Start of Page Content --------------------------------------------------------------------------------------------
   return(
     <div className='container'>
       {!isLoggedIn ? <div className='d-flex justify-content-center pt-5'><h2>Please log in to view this page.</h2></div>
