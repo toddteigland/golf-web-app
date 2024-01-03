@@ -4,7 +4,7 @@ export default function Home() {
   return(
     <div className="container mt-4">
 
-      <div className="d-flex flex-wrap justify-content-between">
+      <div className="d-flex flex-wrap justify-content-center gap-3">
 
         <a className="text-decoration-none mt-3" style={{width: '175px', height: '175px'}} href='/createUser'>
             <div className="card shadow card-img-top" >

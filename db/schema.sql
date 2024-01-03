@@ -30,11 +30,12 @@ CREATE TABLE tees (
 
 CREATE TABLE holes (
     hole_id SERIAL PRIMARY KEY,
-    tee_id INTEGER REFERENCES Tees(tee_id),
+    tee_id INTEGER REFERENCES tees(tee_id),
     hole_number INTEGER NOT NULL,
     yardage INTEGER,
     par INTEGER,
-    handicap INTEGER
+    handicap INTEGER,
+    UNIQUE (tee_id, hole_number)
 );
 
 CREATE TABLE rounds (
@@ -45,10 +46,11 @@ CREATE TABLE rounds (
 
 CREATE TABLE scores (
     score_id SERIAL PRIMARY KEY,
-    round_id INTEGER REFERENCES Rounds(round_id),
-    user_id INTEGER REFERENCES Users(user_id),
-    hole_id INTEGER REFERENCES Holes(hole_id),
+    round_id INTEGER REFERENCES rounds(round_id),
+    user_id INTEGER REFERENCES users(user_id),
+    hole_number INTEGER,
+    tee_id INTEGER REFERENCES tees(tee_id),
     strokes INTEGER NOT NULL,
-    UNIQUE (round_id, user_id, hole_id)
+    UNIQUE (round_id, user_id, hole_number)
 
 );

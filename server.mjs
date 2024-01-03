@@ -205,22 +205,22 @@ app.get("/getAllScores", async (req, res) => {
 
 // ENTER SCORES  -------------------------------------------------------------------------------------------------------------
 app.post("/enterScores", async (req, res) => {
-  const { user_Id, round_Id, hole_Id, strokes } = req.body;
+  const { user_Id, round_Id, hole_number, strokes } = req.body;
   console.log("Received user score entry:", {
     user_Id: req.body.user_Id,
     round_Id: req.body.round_Id,
-    hole_Id: req.body.hole_Id,
+    hole_number: req.body.hole_number,
     strokes: req.body.strokes
   });
   try {
     const scoreEntry = `
-      INSERT INTO SCORES (user_Id, round_Id, hole_Id, strokes)
+      INSERT INTO SCORES (user_Id, round_Id, hole_number, strokes)
       VALUES ($1, $2, $3, $4)
-      ON CONFLICT (user_Id, round_Id, hole_Id)
+      ON CONFLICT (user_Id, round_Id, hole_number)
       DO UPDATE SET strokes = EXCLUDED.strokes
       RETURNING score_id;
     `;
-    const values = [user_Id, round_Id, hole_Id, strokes];
+    const values = [user_Id, round_Id, hole_number, strokes];
     const result = await pool.query(scoreEntry, values);
 
     res.status(201).json({ scoreId: result.rows[0].score_id });

@@ -26,8 +26,8 @@ export const ScoresProvider = ({ children }) => {
   
 
 
-  const handleScoreChange = async (round_Id, user_Id, hole_Id, strokes) => {
-    const score = { round_Id, user_Id, hole_Id, strokes };
+  const handleScoreChange = async (round_Id, user_Id, hole_number, strokes) => {
+    const score = { round_Id, user_Id, hole_number, strokes };
     try {
       const response = await fetch('http://localhost:3000/enterScores', {
         method: 'POST',
@@ -37,7 +37,7 @@ export const ScoresProvider = ({ children }) => {
         body: JSON.stringify(score),
       });
       setScores(prevScores => {
-        const existingScoreIndex = prevScores.findIndex(s => s.hole_id === hole_Id && s.user_id === user_Id && s.round_id === round_Id);
+        const existingScoreIndex = prevScores.findIndex(s => s.hole_number === hole_number && s.user_id === user_Id && s.round_id === round_Id);
         if (existingScoreIndex >= 0) {
           // Update existing score
           const updatedScores = [...prevScores];

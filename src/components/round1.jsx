@@ -34,7 +34,7 @@ export default function Round1() {
   useEffect(() => {
     if (Array.isArray(scores)) {
       const transformedScores = scores.reduce((acc, scoreEntry) => {
-        acc[scoreEntry.hole_id] = scoreEntry.strokes;
+        acc[scoreEntry.hole_number] = scoreEntry.strokes;
         return acc;
       }, {});
       setLocalScores(transformedScores);
@@ -53,15 +53,15 @@ export default function Round1() {
     return `nav-link ${selectedTee === color ? 'active' : ''}`;
   };
   
-  const handleScoreInput = (holeId, value) => {
+  const handleScoreInput = (holeNumber, value) => {
     const user_Id = user.user_id;// User's ID
     const round_Id = 1;// Current round's ID
-    const hole_id = holeId;
+    const hole_number = holeNumber;
     const strokes = parseInt(value, 10) || 0;
-    handleScoreChange(round_Id, user_Id, hole_id, strokes);
+    handleScoreChange(round_Id, user_Id, hole_number, strokes);
     setLocalScores(prevLocalScores => ({
       ...prevLocalScores,
-      [hole_id]: strokes
+      [hole_number]: strokes
     }));
   };
   
@@ -71,6 +71,36 @@ export default function Round1() {
       return Math.max(0, holeScore - 1);
     }
     return holeScore;
+  };
+  
+  //Adding square or circle for birdies/bogeys
+  const getBorderStyle = (holeNumber) => {
+    const holeScore = localScores[holeNumber];
+    const holeData = courseData.find(hole => hole.hole_number === holeNumber);
+    if (!holeData || holeScore === undefined) {
+      return {
+        borderRadius: 8,
+        borderColor: "gray",
+        borderWidth: 1,
+      };
+    }
+    if (holeScore < holeData.par) {
+      return {
+        borderRadius: 50,
+        borderColor: "green",
+        borderWidth: 2,
+      };
+    } else if (holeScore > holeData.par) {
+      return {
+        borderRadius: 0,
+        borderColor: "red",
+        borderWidth: 2,
+      };
+    } else {
+      return {
+        border: 0,
+      };
+    }
   };
   
   
@@ -105,7 +135,7 @@ export default function Round1() {
           </thead>
           <tbody>
             {filteredData.map((hole, index) => {
-              const holeScore = localScores[hole.hole_id] || 0; // Access the score directly using hole_id
+              const holeScore = localScores[hole.hole_number] || 0; // Access the score directly using hole_id
               const netHoleScore = calculateNetHoleScore(holeScore, user.handicap, hole.handicap); // index + 1 because difficulty_rank starts at 1
               const overUnderPar = netHoleScore - hole.par;
               totalScore += holeScore;
@@ -118,12 +148,13 @@ export default function Round1() {
                   <td>{hole.yardage}</td>
                   <td>{hole.par}</td>
                   <td>
-                    <input
-                      className='rounded w-100' 
+                    <input  
+                      className='w-50' 
                       type='number'
-                      value={localScores[hole.hole_id]}
-                      onChange={(e) => handleScoreInput(hole.hole_id, e.target.value)}
-                    />
+                      value={localScores[hole.hole_number]}
+                      onChange={(e) => handleScoreInput(hole.hole_number, e.target.value)}
+                      style={{ ...getBorderStyle(hole.hole_number), textAlign: 'center' }}
+                      />
                   </td>
                   <td>{hole.handicap}</td>
                   <td>{netHoleScore}</td>
@@ -133,8 +164,8 @@ export default function Round1() {
             })}
             <tr>
               <td colSpan="3">Total</td>
-              <td>{`${totalScore} (${totalScore - totalPar > 0 ? '+' : ''}${totalScore - totalPar})`}</td>
-              <td>Net Total:{totalNetScore} </td>
+              <td colSpan="3">{`${totalScore} (${totalScore - totalPar > 0 ? '+' : ''}${totalScore - totalPar})`}</td>
+              <td colSpan="3">Net:{totalNetScore} </td>
             </tr>
           </tbody>
         </table>
