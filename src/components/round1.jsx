@@ -9,39 +9,45 @@ export default function Round1() {
     return localStorage.getItem('selectedTee') || '';
   });
   const { scores, handleScoreChange, fetchScores } = useScores();
-  const [localScores, setLocalScores] = useState({});
 
-  const fetchCourse = async() => {
-    const courseId = 1;
-    try{
-      const response = await fetch (`http://localhost:3000/getCourseInfo?courseId=${courseId}`);
-      const data = await response.json();
-
-      // console.log('ALL course DATA RESULT: ', data);
-
-      setCourseData(data)
-    } catch (error) {
-      console.error('There was an error fetching course data!', error)
-    }
-  };
-   
   useEffect(() => {
+    const fetchCourse = async() => {
+      const courseId = 1;
+      try{
+        const response = await fetch (`http://localhost:3000/getCourseInfo?courseId=${courseId}`);
+        const data = await response.json();
+
+        // console.log('ALL course DATA RESULT: ', data);
+
+        setCourseData(data)
+      } catch (error) {
+        console.error('There was an error fetching course data!', error)
+      }
+    };
     fetchCourse();
     fetchScores();
-  }, []);
-  
+  }, [selectedTee]);
+
   //This transforms the scores array of objects, into an object with hole_id as key, and strokes as values
-  useEffect(() => {
-    if (Array.isArray(scores)) {
-      const transformedScores = scores.reduce((acc, scoreEntry) => {
-        acc[scoreEntry.hole_number] = scoreEntry.strokes;
-        return acc;
-      }, {});
-      setLocalScores(transformedScores);
-    } else {
-      console.error('Scores is not an array: ', scores)
-    }
-  }, [scores]);
+  // useEffect(() => {
+    // Assuming scores.round1 and scores.round2 are arrays of score objects
+  //   const transformedScores = {
+  //     round1: {},
+  //     round2: {}
+  //   };
+  //   if (scores.round1 && Array.isArray(scores.round1)) {
+  //     scores.round1.forEach(scoreEntry => {
+  //       transformedScores.round1[scoreEntry.hole_number] = scoreEntry.strokes;
+  //     });
+  //   }
+    
+  //   if (scores.round2 && Array.isArray(scores.round2)) {
+  //     scores.round2.forEach(scoreEntry => {
+  //       transformedScores.round2[scoreEntry.hole_number] = scoreEntry.strokes;
+  //     });
+  //   }
+  //   console.log('scores :: ', scores);
+  // }, [scores]);
 
   
   const handleTabClick = (color) => {
@@ -54,15 +60,9 @@ export default function Round1() {
   };
   
   const handleScoreInput = (holeNumber, value) => {
-    const user_Id = user.user_id;// User's ID
-    const round_Id = 1;// Current round's ID
-    const hole_number = holeNumber;
     const strokes = parseInt(value, 10) || 0;
-    handleScoreChange(round_Id, user_Id, hole_number, strokes);
-    setLocalScores(prevLocalScores => ({
-      ...prevLocalScores,
-      [hole_number]: strokes
-    }));
+    handleScoreChange(1, user.user_id, holeNumber, strokes);
+
   };
   
   const calculateNetHoleScore = (holeScore, handicap, holeHandicap) => {
@@ -75,7 +75,7 @@ export default function Round1() {
   
   //Adding square or circle for birdies/bogeys
   const getBorderStyle = (holeNumber) => {
-    const holeScore = localScores[holeNumber];
+    const holeScore = scores[holeNumber];
     const holeData = courseData.find(hole => hole.hole_number === holeNumber);
     if (!holeData || holeScore === undefined) {
       return {
@@ -135,13 +135,12 @@ export default function Round1() {
           </thead>
           <tbody>
             {filteredData.map((hole, index) => {
-              const holeScore = localScores[hole.hole_number] || 0; // Access the score directly using hole_id
+              const holeScore = scores.round1[user.user_id]?.[hole.hole_number] || 0;
               const netHoleScore = calculateNetHoleScore(holeScore, user.handicap, hole.handicap); // index + 1 because difficulty_rank starts at 1
               const overUnderPar = netHoleScore - hole.par;
               totalScore += holeScore;
               totalPar += hole.par;
               totalNetScore += netHoleScore;
-              // console.log('localscores ::: ', localScores);
               return (
                 <tr key={index}>
                   <td>{hole.hole_number}</td>
@@ -151,7 +150,7 @@ export default function Round1() {
                     <input  
                       className='w-50' 
                       type='number'
-                      value={localScores[hole.hole_number]}
+                      value={scores.round1[user.user_id]?.[hole.hole_number]}
                       onChange={(e) => handleScoreInput(hole.hole_number, e.target.value)}
                       style={{ ...getBorderStyle(hole.hole_number), textAlign: 'center' }}
                       />
@@ -163,9 +162,9 @@ export default function Round1() {
               );
             })}
             <tr>
-              <td colSpan="3">Total</td>
-              <td colSpan="3">{`${totalScore} (${totalScore - totalPar > 0 ? '+' : ''}${totalScore - totalPar})`}</td>
-              <td colSpan="3">Net:{totalNetScore} </td>
+              <td colSpan="3" className='fw-bold'>Total</td>
+              <td colSpan="3" className='fw-bold'>{`${totalScore} (${totalScore - totalPar > 0 ? '+' : ''}${totalScore - totalPar})`}</td>
+              <td colSpan="3" className='fw-bold'>Net:{totalNetScore} </td>
             </tr>
           </tbody>
         </table>

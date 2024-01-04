@@ -49,7 +49,7 @@ CREATE TABLE scores (
     round_id INTEGER REFERENCES rounds(round_id),
     user_id INTEGER REFERENCES users(user_id),
     hole_number INTEGER,
-    tee_id INTEGER REFERENCES tees(tee_id),
+    -- tee_id INTEGER REFERENCES tees(tee_id),
     strokes INTEGER NOT NULL,
     UNIQUE (round_id, user_id, hole_number)
 

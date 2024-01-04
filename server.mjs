@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
-const { Pool } = pg;
 import dotenv from 'dotenv'
 import bcrypt from 'bcrypt'
+import { createServer } from 'http'; // Import the http module
+import { Server } from 'socket.io'; // Import Socket.IO
 
 dotenv.config();
 
@@ -11,6 +12,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 const port = process.env.PORT || 3000;
+const { Pool } = pg;
 
 
 const pool = new Pool({
@@ -25,7 +27,6 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-
 app.get('/test-db', async (req, res) => {
   try {
     const dbRes = await pool.query('SELECT NOW()');
@@ -36,7 +37,31 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+
+const httpServer = createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // Adjust according to your needs
+    methods: ["GET", "POST"]
+  }
+});
+
+// Handling Socket.IO connections
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // Handle your events here
+  // Example: socket.on('someEvent', (data) => { ... });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Change app.listen to httpServer.listen
+httpServer.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
@@ -165,24 +190,25 @@ app.get("/getCourseInfo", async (req, res) => {
 });
 
 // INDIVIDUAL SCORES LOOKUP  -------------------------------------------------------------------------------------------------------------
-app.get("/getScores", async (req, res) => {
-  const course_id = req.query.courseId;
-  const user_id = req.query.userId
+// app.get("/getScores", async (req, res) => {
+//   // const course_id = req.query.courseId;
+//   const user_id = req.query.userId
+//   // const round_id = req.query.roundId
 
-  try {
-    const scoresQuery = `
-    SELECT * FROM scores 
-    WHERE round_id = $1 AND user_id = $2;
-    ;`
-    const scoresResult = await pool.query(scoresQuery, [course_id, user_id]);
-    res.status(200).json(scoresResult.rows);
-    // console.log('SCORES LOOKUP RESULT: ', scoresResult);
-  } catch (error) {
-    console.error("Error fetching scores Data: ", error);
-    res.status(500).json({ error: "Error fetching scores data" });
-  }
+//   try {
+//     const scoresQuery = `
+//     SELECT * FROM scores 
+//     WHERE  user_id = $1;
+//     ;`
+//     const scoresResult = await pool.query(scoresQuery, [user_id]);
+//     res.status(200).json(scoresResult.rows);
+//     console.log('SCORES LOOKUP RESULT: ', scoresResult.rows);
+//   } catch (error) {
+//     console.error("Error fetching scores Data: ", error);
+//     res.status(500).json({ error: "Error fetching scores data" });
+//   }
 
-})
+// })
 
 // ALL SCORES LOOKUP  -------------------------------------------------------------------------------------------------------------
 app.get("/getAllScores", async (req, res) => {
@@ -191,9 +217,8 @@ app.get("/getAllScores", async (req, res) => {
   try {
     const scoresQuery = `
     SELECT * FROM scores 
-    WHERE round_id = $1;
     ;`
-    const scoresResult = await pool.query(scoresQuery, [course_id]);
+    const scoresResult = await pool.query(scoresQuery);
     res.status(200).json(scoresResult.rows);
     console.log('all SCORES LOOKUP RESULT: ', scoresResult.rows);
   } catch (error) {
@@ -223,7 +248,9 @@ app.post("/enterScores", async (req, res) => {
     const values = [user_Id, round_Id, hole_number, strokes];
     const result = await pool.query(scoreEntry, values);
 
-    res.status(201).json({ scoreId: result.rows[0].score_id });
+    // res.status(201).json({ scoreId: result.rows[0].score_id });
+    io.emit('scoreUpdated', { scoreId: result.rows[0].score_id });
+
   } catch (error) {
     console.error("Error in score entry:", error);
     res.status(500).json({ error: "Error in score entry" });

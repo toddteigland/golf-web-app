@@ -14,8 +14,8 @@ export default function Header() {
 
 
   return (
-    <section className="sticky-top">
-      <nav className="navbar navbar-expand-lg " style={{ backgroundImage: `url(${utahBanner3})`, backgroundPosition: "right", backgroundPositionY: '35%', backgroundRepeat: 'no-repeat', backgroundSize: 'cover' , height: '100px', textShadow: '1px 1px 2px white'}}>
+    <section className="sticky-top" style={{ width: '100vw' }}>
+      <nav className="navbar navbar-expand-lg " style={{ backgroundImage: `url(${utahBanner3})`, backgroundPosition: "right", backgroundPositionY: '35%', backgroundRepeat: 'no-repeat', backgroundSize: 'cover' , height: '125px', textShadow: '1px 1px 2px white'}}>
         <div className="container-fluid d-flex justify-content-between pt-2">
           <button
             className="btn btn-primary btn-md"
