@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 const AuthContext = createContext();
 
+
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(JSON.parse(localStorage.getItem('isLoggedIn')) || false );
   const [user, setUser] = useState( JSON.parse(localStorage.getItem('user')) || null );

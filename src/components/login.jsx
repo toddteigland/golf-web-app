@@ -19,7 +19,6 @@ export default function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log('submit button clicked!');
     try {
       const response = await fetch("http://localhost:3000/login", {
         method: "POST",
@@ -29,7 +28,6 @@ export default function Login() {
         body: JSON.stringify(formData),
       });
 
-      console.log('USER LOGGing IN: ', formData);
       if (response.ok) {
         // Fetch user data from server
         const userInfoResponse = await fetch(
@@ -59,38 +57,35 @@ export default function Login() {
 
   useEffect(() => {
     if (isLoggedIn) {
-      navigate("/dashboardUser", { replace: true });
+      navigate("/leaderboard", { replace: true });
     }
   }, [isLoggedIn, navigate]);
 
-  
-  useEffect(() => {
-    console.log('Updated user state:', user);
-    console.log('Is user logged in? ', isLoggedIn);
-  }, [user]);
-
   return(
-  <>
-  <form className='container mt-4 mb-4' onSubmit={handleSubmit}>
-    <div className="d-flex justify-content-center mb-3">
-      <h1>Login</h1>
+  <div className='container d-flex flex-col justify-content-center'>
+
+    <div style={{ backgroundColor: '#rrr845', position: 'fixed', top: 360, width: '90%', }} className='p-2 rounded'>
+      <form className='mt-4 mb-4' onSubmit={handleSubmit}>
+        <div className="d-flex justify-content-center mb-3">
+          <h1>Sandbagger Invitational</h1>
+        </div>
+        <div className="form-floating mb-3">
+          <input type="email" className="form-control" id="floatingInput" name='email' onChange={handleChange} required/>
+          <label htmlFor="floatingInput">Email address</label>
+        </div>
+        <div className="form-floating mb-3">
+          <input type="password" className="form-control" id="password1" name='password' onChange={handleChange} required/>
+          <label htmlFor="password1">Password</label>
+        </div>
+        <div className="d-flex justify-content-center">
+          <button type="submit" className="btn btn-lg btn-primary">Login</button>
+        </div>  
+      </form>
     </div>
-    <div className="form-floating mb-3">
-      <input type="email" className="form-control" id="floatingInput" name='email' aria-describedby="emailHelp" onChange={handleChange} required/>
-      <label htmlFor="floatingInput">Email address</label>
-    </div>
-    <div className="form-floating mb-3">
-      <input type="password" className="form-control" id="password1" name='password' onChange={handleChange} required/>
-      <label htmlFor="password1">Password</label>
-    </div>
-    <div className="d-flex justify-content-center">
-      <button type="submit" className="btn btn-lg btn-primary">Submit</button>
-    </div>  
-  </form>
     
     {loginErrorPopup && (
       <div className="modal show" style={{ display: 'block' }} tabIndex="-1">
-        <div className="modal-dialog">
+        <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Login Error</h5>
@@ -106,6 +101,6 @@ export default function Login() {
         </div>
       </div>
     )}
-  </>
+  </div>
   )
 }

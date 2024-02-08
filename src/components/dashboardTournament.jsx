@@ -1,12 +1,17 @@
 import React from 'react'
+import { useAuth } from './authContext';
 
 export default function DashboardTournament() {
+  const { user, logout, isLoggedIn } = useAuth();
+
   return(
     <div className="container">
       <div className='d-flex justify-content-center m-4'>
         <h1>Tournament Dashboard</h1>
       </div>
-      <div className="d-flex flex-wrap justify-content-between">
+        <div className="d-flex flex-wrap justify-content-between">
+      {user.participating && (
+        <>
 
         <a className="text-decoration-none mt-3" style={{width: '175px', height: '175px'}} href='/scramble'>
             <div className="card shadow card-img-top" >
@@ -40,7 +45,8 @@ export default function DashboardTournament() {
             </div>
           </div>
         </a>
-
+        </>
+        )}
         <a className="text-decoration-none mt-3" style={{width: '175px', height: '175px'}} href='/leaderboard'>
             <div className="card shadow card-img-top" >
             <svg xmlns="http://www.w3.org/2000/svg" width="84" height="84" fill="gold" className="bi bi-gear align-self-center pt-3" viewBox="0 0 16 16">

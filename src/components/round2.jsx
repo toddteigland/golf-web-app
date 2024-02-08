@@ -5,104 +5,56 @@ import { useAuth } from './authContext';
 export default function Round2() {
   const { user, isLoggedIn } = useAuth();
   const [ courseData, setCourseData ] = useState([]);
-  const [selectedTee, setSelectedTee] = useState(() => {
-    return localStorage.getItem('selectedTee') || '';
+  const [selectedTeeRnd2, setSelectedTeeRnd2] = useState(() => {
+    return localStorage.getItem('selectedTeeRnd2') || '';
   });
-  const { scores, handleScoreChange, fetchScores } = useScores();
+  const { scores, handleScoreChange, fetchScores, calculateNetHoleScore, leaderboardData } = useScores();
 
-  const fetchCourse = async() => {
-    const courseId = 2;
-    try{
-      const response = await fetch (`http://localhost:3000/getCourseInfo?courseId=${courseId}`);
-      const data = await response.json();
-
-      // console.log('ALL course DATA RESULT: ', data);
-
-      setCourseData(data)
-    } catch (error) {
-      console.error('There was an error fetching course data!', error)
-    }
-  };
-   
   useEffect(() => {
-    fetchCourse();
-    fetchScores(2);
-  }, []);
-  
-  //This transforms the scores array of objects, into an object with hole_id as key, and strokes as values
-  useEffect(() => {
-    // Assuming scores.round1 and scores.round2 are arrays of score objects
-    const transformedScores = {
-      round1: {},
-      round2: {}
+    const fetchCourse = async() => {
+      const courseId = 2;
+      try{
+        const response = await fetch (`http://localhost:3000/getCourseInfo?courseId=${courseId}`);
+        const data = await response.json();
+
+        setCourseData(data)
+      } catch (error) {
+        console.error('There was an error fetching course data!', error)
+      }
     };
-    if (scores.round1 && Array.isArray(scores.round1)) {
-      scores.round1.forEach(scoreEntry => {
-        transformedScores.round1[scoreEntry.hole_number] = scoreEntry.strokes;
-      });
-    }
-    if (scores.round2 && Array.isArray(scores.round2)) {
-      scores.round2.forEach(scoreEntry => {
-        transformedScores.round2[scoreEntry.hole_number] = scoreEntry.strokes;
-      });
-    }
-  }, [scores]);
+    fetchCourse();
+    fetchScores();
+  }, [selectedTeeRnd2]);
 
   const handleTabClick = (color) => {
-    setSelectedTee(color);
-    localStorage.setItem('selectedTee', color);
+    setSelectedTeeRnd2(color);
+    localStorage.setItem('selectedTeeRnd2', color);
   };
   
   const getTabClassName = (color) => {
-    return `nav-link ${selectedTee === color ? 'active' : ''}`;
+    return `nav-link ${selectedTeeRnd2 === color ? 'active' : ''}`;
   };
   
   const handleScoreInput = (holeNumber, value) => {
-    const user_Id = user.user_id;// User's ID
-    const round_Id = 2;// Current round's ID
-    const hole_number = holeNumber;
     const strokes = parseInt(value, 10) || 0;
-    handleScoreChange(round_Id, user_Id, hole_number, strokes);
+    handleScoreChange(2, user.user_id, holeNumber, strokes);
   };
-  
-  const calculateNetHoleScore = (holeScore, handicap, holeHandicap) => {
-    if (handicap >= holeHandicap) {
-      // Subtract one stroke if the hole is within the range of the handicap
-      return Math.max(0, holeScore - 1);
-    }
-    return holeScore;
-  };
-  
+    
   //Adding square or circle for birdies/bogeys
-  const getBorderStyle = (holeNumber) => {
-    const holeScore = scores[holeNumber];
-    const holeData = courseData.find(hole => hole.hole_number === holeNumber);
-    if (!holeData || holeScore === undefined) {
+  const getBorderStyle = (netOverUnderPar, holeScore) => {
+    if (netOverUnderPar === -1 || netOverUnderPar === -2 || (netOverUnderPar === -3 && holeScore !== 0) ) {
       return {
-        borderRadius: 8,
-        borderColor: "gray",
-        borderWidth: 1,
+        backgroundColor: "lightgreen",
       };
-    }
-    if (holeScore < holeData.par) {
+    } else if (netOverUnderPar > 0) {
       return {
-        borderRadius: 50,
-        borderColor: "green",
-        borderWidth: 2,
-      };
-    } else if (holeScore > holeData.par) {
-      return {
-        borderRadius: 0,
-        borderColor: "red",
-        borderWidth: 2,
+        backgroundColor: "salmon"
       };
     } else {
       return {
-        border: 0,
       };
     }
   };
-  
   
     //-------- Function to render the table based on active tee color-------------------------------------------------------
     const renderTeeTable = (color) => {
@@ -110,12 +62,19 @@ export default function Round2() {
       if (!Array.isArray(courseData)) {
         return <p>Loading data or data format is incorrect...</p>;
       }
+      let front9Total = 0;
+      let front9Net = 0;
+      let front9OverUnder = 0;
+      let back9Total = 0;
+      let back9Net = 0; 
+      let back9OverUnder = 0;
+      let currentScore = 0;
+
       let totalScore = 0;
       let totalPar = 0;
       let totalNetScore = 0;
-      const sortedHoles = courseData
-        .filter(hole => hole.tee_name.toLowerCase() === color)
-        .sort((a, b) => a.handicap - b.handicap); // Sort by difficulty rank
+      let totalOverUnderPar = 0;
+      let totalNetOverUnderPar = 0;
 
       // Filter the courseData based on tee color and generate the table
       const filteredData = courseData.filter(item => item.tee_name === color);
@@ -125,9 +84,9 @@ export default function Round2() {
             <tr>
               <th>Hole</th>
               <th>Yards</th>
+              <th>Cap</th>
               <th>Par</th>
               <th>Score</th>
-              <th>Cap</th>
               <th>Net</th>
               <th>+/-</th>
             </tr>
@@ -135,39 +94,80 @@ export default function Round2() {
           </thead>
           <tbody>
             {filteredData.map((hole, index) => {
-              const holeScore = scores.round2[hole.hole_number] || 0; // Access the score directly using hole_id
-              const netHoleScore = calculateNetHoleScore(holeScore, user.handicap, hole.handicap); // index + 1 because difficulty_rank starts at 1
+              const holeScore = scores.round2[user.user_id]?.[hole.hole_number] || 0;
+              const netHoleScore = calculateNetHoleScore(holeScore, user.handicap, hole.handicap);
               const overUnderPar = netHoleScore - hole.par;
+              const netOverUnderPar = netHoleScore - hole.par;
               totalScore += holeScore;
               totalPar += hole.par;
               totalNetScore += netHoleScore;
-              return (
-                <tr key={index}>
+              if (index < 9) {
+                front9Total += holeScore; // Sum up the scores for the front 9
+                front9Net += netHoleScore
+                front9OverUnder += netOverUnderPar
+              } else {
+                back9Total += holeScore; 
+                back9Net += netHoleScore;  
+                back9OverUnder += netOverUnderPar;
+              }
+              currentScore += holeScore;
+              if (holeScore !== 0) { // Only consider played holes
+                totalOverUnderPar += overUnderPar;
+                totalNetOverUnderPar += netOverUnderPar;
+              }
+              const holeRows = [
+                <tr key={hole.hole_number}>
                   <td>{hole.hole_number}</td>
                   <td>{hole.yardage}</td>
+                  <td>{hole.handicap}</td>
                   <td>{hole.par}</td>
                   <td>
                     <input  
-                      className='w-50' 
                       type='number'
-                      value={scores.round2[hole.hole_number]}
+                      value={holeScore}
                       onChange={(e) => handleScoreInput(hole.hole_number, e.target.value)}
-                      style={{ ...getBorderStyle(hole.hole_number), textAlign: 'center' }}
+                      style={{ textAlign: 'center', maxWidth: '45px' }}
                       />
                   </td>
-                  <td>{hole.handicap}</td>
-                  <td>{netHoleScore}</td>
-                  <td>{holeScore ? `(${overUnderPar > 0 ? '+' : ''}${overUnderPar})` : ''}</td>
+                  <td style={{...getBorderStyle(netOverUnderPar, holeScore), textAlign: 'center'}}>{netHoleScore}</td>
+                  <td>{holeScore ? `(${netOverUnderPar > 0 ? '+' : ''}${netOverUnderPar})` : ''}</td>
                 </tr>
-              );
+              ];
+
+              // Conditionally add "Out" row after 9th hole
+              if (index === 8) {
+                holeRows.push(
+                  <tr key="out">
+                    <td colSpan="3"><strong>Out</strong></td>
+                    <td colSpan="2"><strong>Total: {front9Total}</strong></td>
+                    <td colSpan="2"><strong>Net: {front9Net} ({front9OverUnder})</strong></td>
+                     {/* <td colSpan="1"><strong>({front9OverUnder})</strong></td> */}
+                  </tr>
+                );
+              }
+                  
+              // Conditionally add "In" row after 18th hole
+              if (index === filteredData.length - 1) {
+                holeRows.push(
+                  <tr key="in">
+                    <td colSpan="3"><strong>In</strong></td>
+                    <td colSpan="2"><strong>Total: {back9Total}</strong></td>
+                    <td colSpan="2"><strong>Net: {back9Net} ({back9OverUnder})</strong></td>
+                    {/* <td colSpan="1"><strong>({back9OverUnder})</strong></td> */}
+                  </tr>
+                );
+              }
+                  
+              return holeRows; // Return the array of rows, which could contain 1 or 2 rows
             })}
-            <tr>
+
+            <tr style={{ borderTop: '2px solid black' }}>
               <td colSpan="3" className='fw-bold'>Total</td>
-              <td colSpan="3" className='fw-bold'>{`${totalScore} (${totalScore - totalPar > 0 ? '+' : ''}${totalScore - totalPar})`}</td>
-              <td colSpan="3" className='fw-bold'>Net:{totalNetScore} </td>
+              <td colSpan="2" className='fw-bold'>{totalScore}({totalOverUnderPar})</td>
+              <td colSpan="2" className='fw-bold'>Net: {totalNetScore} ({totalNetOverUnderPar}) </td>
             </tr>
           </tbody>
-        </table>
+        </table> 
       );
     };
     // End of Table Content ---------------------------------------------------------------------------------------------
@@ -198,17 +198,17 @@ export default function Round2() {
               </li>
             </ul>
             <div className="tab-content" id="pills-tabContent">
-              {selectedTee === 'Yellow' && (
+              {selectedTeeRnd2 === 'Yellow' && (
                 <div className="tab-pane fade show active" id="pills-Yellow" role="tabpanel">
                     {renderTeeTable('Yellow')}
                   </div>
                 )}
-                {selectedTee === 'Green' && (
+                {selectedTeeRnd2 === 'Green' && (
                   <div className="tab-pane fade show active" id="pills-Green" role="tabpanel">
                     {renderTeeTable('Green')}
                   </div>
                 )}
-                {selectedTee === 'Combo' && (
+                {selectedTeeRnd2 === 'Combo' && (
                   <div className="tab-pane fade show active" id="pills-Combo" role="tabpanel">
                     {renderTeeTable('Combo')}
                   </div>
